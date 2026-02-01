@@ -1,6 +1,6 @@
 # ExecMod
 
-A utility mod for **Valheim** built with BepInEx. This mod provides an in-game console command:
+A BepInEx utility mod for **Valheim**. This mod provides an in-game console command:
 
 `exec`
 
