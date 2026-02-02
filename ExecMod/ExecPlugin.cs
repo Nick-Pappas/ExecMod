@@ -1,4 +1,7 @@
-﻿using BepInEx;
+/*
+Nick Pappas Feb 2026
+*/
+using BepInEx;
 using HarmonyLib;
 using System.Collections;
 using System.IO;
