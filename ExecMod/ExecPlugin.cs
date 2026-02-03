@@ -1,7 +1,14 @@
-﻿using BepInEx;
+﻿/*
+ Nick Pappas Feb 2026
+ */
+using BepInEx;
+using BepInEx.Configuration;
 using HarmonyLib;
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 
 /*
@@ -12,19 +19,42 @@ using UnityEngine;
 namespace ExecMod
 {
     // Define the plugin metadata: GUID, Name, and Version
-    [BepInPlugin("com.nickpappas.execmod", "Exec Command Mod", "0.1.1")]
+    [BepInPlugin("np.execmod", "Exec Command Mod", "0.2.0")]
     public class ExecPlugin : BaseUnityPlugin
     {
         // Initialize Harmony for manual patching and store a static instance for Coroutine access
-        private readonly Harmony _harmony = new Harmony("com.nickpappas.execmod");
+        private readonly Harmony _harmony = new Harmony("np.execmod");
         private static ExecPlugin? Instance;
+
+        // Config entries for adjustable delays
+        public static ConfigEntry<float>? SpawnDelay;
+        public static ConfigEntry<float>? DataDelay;
+        public static ConfigEntry<float>? DefaultDelay;
 
         void Awake()
         {
             // Set singleton instance and apply all Harmony patches within this assembly
             Instance = this;
+
+            // Setup Configuration - binds to bepinex/config/np.execmod.cfg
+            SpawnDelay = Config.Bind("Delays", "SpawnDelay", 0.4f, "Delay after a 'spawn' command (seconds). Original testing showed 0.28f was okay, 0.4f is safer.");
+            DumpDelay = Config.Bind("Delays", "DataDelay", 0.2f, "Delay after 'data dump' or 'physdump' commands (seconds). Ensures file I/O (like YAML writing) completes.");
+            DefaultDelay = Config.Bind("Delays", "DefaultDelay", 0.12f, "Delay for all other commands (seconds). 0 means one frame wait.");
+
             _harmony.PatchAll();
             Logger.LogInfo("Command 'exec' is registered.");
+        }
+
+        // Helper to find files: check 'config/expand_world/' first, then fall back to the base 'config/' folder
+        private static string? GetFilePath(string filename)
+        {
+            string path = Path.Combine(Paths.ConfigPath, "expand_world", filename);
+            if (File.Exists(path)) return path;
+
+            path = Path.Combine(Paths.ConfigPath, filename);
+            if (File.Exists(path)) return path;
+
+            return null;
         }
 
         // Patch the Terminal's initialization method to register the custom 'exec' command
@@ -37,17 +67,54 @@ namespace ExecMod
                 if (Terminal.commands.ContainsKey("exec")) return;
 
                 // Register 'exec' as a new terminal command
-                new Terminal.ConsoleCommand("exec", "Executes commands from a script in config/expand_world (include the .txt)", (Terminal.ConsoleEventArgs args) =>
+                new Terminal.ConsoleCommand("exec", "Executes commands from a script (include the .txt)", (Terminal.ConsoleEventArgs args) =>
                 {
                     // Ensure a filename argument is provided
                     if (args.Length < 2) return;
 
-                    // Resolve path: check 'config/expand_world/' first, then fall back to the base 'config/' folder
-                    string path = Path.Combine(Paths.ConfigPath, "expand_world", args.Args[1]);
-                    if (!File.Exists(path)) path = Path.Combine(Paths.ConfigPath, args.Args[1]);
+                    string filename = args.Args[1];
+                    string? fullPath = GetFilePath(filename);
 
-                    // If the file exists, initiate the batch execution via a Coroutine to handle timing
-                    if (File.Exists(path)) Instance?.StartCoroutine(ExecuteBatch(File.ReadAllLines(path), args.Context));
+                    if (fullPath != null)
+                    {
+                        // If the file exists, initiate the batch execution via a Coroutine to handle timing
+                        Instance?.StartCoroutine(ExecuteBatch(File.ReadAllLines(fullPath), args.Context));
+                    }
+                    else
+                    {
+                        // Provide feedback if the file is missing
+                        args.Context.AddString($"<color=red>[Exec] File not found: {filename}</color>");
+                    }
+                },
+                optionsFetcher: () =>
+                {
+                    try
+                    {
+                        List<string> files = new List<string>();
+                        string mainConfig = Paths.ConfigPath;
+                        string expandWorld = Path.Combine(Paths.ConfigPath, "expand_world");
+
+                        if (Directory.Exists(expandWorld))
+                        {
+                            files.AddRange(Directory.GetFiles(expandWorld, "*.txt")
+                                .Select(Path.GetFileName)
+                                .Where(name => !string.IsNullOrEmpty(name))!);
+                        }
+
+                        if (Directory.Exists(mainConfig))
+                        {
+                            files.AddRange(Directory.GetFiles(mainConfig, "*.txt")
+                                .Select(Path.GetFileName)
+                                .Where(name => !string.IsNullOrEmpty(name))!);
+                        }
+
+                        return files.Distinct().ToList();
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning($"[ExecMod] Autocomplete failed: {ex.Message}");
+                        return new List<string>();
+                    }
                 });
             }
         }
@@ -72,25 +139,29 @@ namespace ExecMod
                 // Execute the command through the game's internal console system
                 Console.instance.TryRunCommand(cmd);
 
+                string lowerCmd = cmd.ToLower();
+
                 // Timing Logic: Apply specific delays based on the command type to ensure stability
-                if (cmd.ToLower().StartsWith("spawn "))
+                if (lowerCmd.StartsWith("spawn "))
                 {
                     // Longer delay for entity spawning to manage engine overhead
-                    yield return new WaitForSeconds(0.4f); // Slightly more buffer for safety. For use with data dump this was working fine with 0.28f. I 'm just too cautious here.
+                    yield return new WaitForSeconds(SpawnDelay?.Value ?? 0.4f);
                 }
-                else if (cmd.ToLower().StartsWith("data "))
+                else if (lowerCmd.StartsWith("data dump") || lowerCmd.StartsWith("physdump "))
                 {
-                    // Moderate delay for data commands to ensure file I/O (like YAML writing) completes. For people who are not on super fast SSDs this might be necessary and actually a bit increased?
-                    yield return new WaitForSeconds(0.2f);
+                    // Moderate delay for data commands to ensure file I/O (like YAML writing) completes. 
+                    yield return new WaitForSeconds(DumpDelay?.Value ?? 0.2f); 
                 }
                 else
                 {
-                    // Default to a single frame wait for all other commands
-                    yield return null;
+                    // Default to a configurable delay or single frame wait for all other commands
+                    float d = DefaultDelay?.Value ?? 0.12f;
+                    if (d > 0) yield return new WaitForSeconds(d);
+                    else yield return null;
                 }
             }
             // Notify the user in the console once the entire batch file has been processed
-            context.AddString("<color=green>[Exec] Batch Complete. All YAMLs generated.</color>");
+            context.AddString("<color=green>[Exec] Batch Complete. All commands processed.</color>");
         }
     }
 }

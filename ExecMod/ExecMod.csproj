@@ -12,7 +12,6 @@
 		<Copy SourceFiles="$(TargetDir)$(TargetFileName)" DestinationFolder="$(ProjectDir)..\..\Libs" />
 		<Message Text="Successfully copied $(TargetFileName) to Libs folder." Importance="High" />
 	</Target>
-
 	<ItemGroup>
 		<Reference Include="BepInEx">
 			<HintPath>..\..\Libs\BepInEx.dll</HintPath>
@@ -33,7 +32,6 @@
 			<HintPath>..\..\Libs\assembly_utils.dll</HintPath>
 		</Reference>
 	</ItemGroup>
-
 	<ItemGroup>
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0-3.final" />
 	</ItemGroup>
