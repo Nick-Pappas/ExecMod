@@ -37,15 +37,15 @@ Open the game console (**F5**) and use the following syntax:
 
 #### Example:
 
-Suppose that you want to do the following task (which is what I wanted to do and why I wrote the mod): Spawn a particular prefab, and use Jere Kuusela’s _World Edit Commands_ to do a data dump of this prefab's various fields.
+Suppose that you want to do the following task (which is what I wanted to do and why I wrote the mod): Spawn a particular prefab, and use Jere Kuuselaâ€™s _World Edit Commands_ to do a data dump of this prefab's various fields.
 
 You would do:
 
--   `spawn Blob` <— spawn a prefab, in this case a _Blob_
+-   `spawn Blob` <â€” spawn a prefab, in this case a _Blob_
     
--   `data dump=Blob_data id=Blob radius=10` <— save the prefab’s data in the default Valheim’s location in a file called `data.yaml`.
+-   `data dump=Blob_data id=Blob radius=10` <â€” save the prefabâ€™s data in the default Valheimâ€™s location in a file called `data.yaml`.
     
--   `object id=Blob radius=10 remove` <— now that you are done with this spawn just remove it.
+-   `object id=Blob radius=10 remove` <â€” now that you are done with this spawn just remove it.
     
 
 You would have in your `data.yaml` something that looks like:
@@ -79,11 +79,11 @@ You would have in your `data.yaml` something that looks like:
 > 
 > _- Humanoid.m_flying, 0_
 > 
-> …..
+> â€¦..
 > 
 > (a gazillion other stuff, for ints, then for floats etc.)
 > 
-> ….
+> â€¦.
 > 
 > _vecs:_
 > 
@@ -175,19 +175,19 @@ Now if you go in-game and you get into `debugmode`, press **Z** to fly, and fly 
 
 This is equivalent to you typing manually in order:
 
--   `killall` <— kills everything around you
+-   `killall` <â€” kills everything around you
     
--   `removedrops` <— removes everything so you have a clean area
+-   `removedrops` <â€” removes everything so you have a clean area
     
--   `echo [SCRIPT] Starting Bulk Dump using Verified Syntax...` <— prints this on the CLI locally
+-   `echo [SCRIPT] Starting Bulk Dump using Verified Syntax...` <â€” prints this on the CLI locally
     
--   `echo [PROCESS] Blob` <— print this too
+-   `echo [PROCESS] Blob` <â€” print this too
     
--   `spawn Blob` <— spawn a blob
+-   `spawn Blob` <â€” spawn a blob
     
--   `data dump=Blob_data id=Blob radius=10` <— do the data dump
+-   `data dump=Blob_data id=Blob radius=10` <â€” do the data dump
     
--   `object id=Blob radius=10 remove` <— remove that blob… its gone now.
+-   `object id=Blob radius=10 remove` <â€” remove that blobâ€¦ its gone now.
     
 
 Rinse and repeat for each entry. Once complete, a green notification `[Exec] Batch Complete` will appear.

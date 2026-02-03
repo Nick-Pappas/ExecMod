@@ -1,8 +1,15 @@
+<<<<<<< HEAD
 ﻿/*
  Nick Pappas Feb 2026
  */
 using BepInEx;
 using BepInEx.Configuration;
+=======
+/*
+Nick Pappas Feb 2026
+*/
+using BepInEx;
+>>>>>>> 935493ca9421ef76a00295deb922f57615b81424
 using HarmonyLib;
 using System;
 using System.Collections;
